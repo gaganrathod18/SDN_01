@@ -24,14 +24,14 @@ service IP, tested with Mininet on Fedora 43.
 
 | File | What it is |
 |---|---|
-| `SimpleLoadBalancer.py` | the controller implementation (submit this) |
-| `IMPL.md` | design + setup/run guide |
-| `report.md` | test report with screenshots and results |
-| `report.html` | same report, designed/styled standalone page (open directly in a browser) |
-| `commands.md` | plain copy-pasteable command list for re-running every test |
-| `public/` | terminal screenshots referenced by `report.md` |
-| `exercise1_problem.pdf` | assignment spec |
-| `exercise1_reading.pdf` | POX/Mininet/OpenFlow tutorial (background reading) |
+| [`SimpleLoadBalancer.py`](SimpleLoadBalancer.py) | the controller implementation (submit this) |
+| [`IMPL.md`](IMPL.md) | design + setup/run guide |
+| [`report.md`](report.md) | test report with screenshots and results |
+| [`report.html`](report.html) | same report, designed/styled standalone page (open directly in a browser) |
+| [`commands.md`](commands.md) | plain copy-pasteable command list for re-running every test |
+| [`public/`](public/) | terminal screenshots referenced by `report.md` |
+| [`exercise1_problem.pdf`](exercise1_problem.pdf) | assignment spec |
+| [`exercise1_reading.pdf`](exercise1_reading.pdf) | POX/Mininet/OpenFlow tutorial (background reading) |
 
 ## TL;DR
 
