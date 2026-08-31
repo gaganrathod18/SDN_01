@@ -46,5 +46,5 @@ podman run --rm -it --network host \
 sudo mn --topo single,8 --controller remote,ip=127.0.0.1,port=6633 --mac --switch ovsk
 mininet> h1 ping -c4 10.1.2.3
 ```
-Full details, every step, and why: see `IMPL.md`. Results of actually running it:
+Full details, every step, and why: see `IMPL.md`. Results of actually running it :
 see `report.md`.
