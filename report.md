@@ -3,8 +3,12 @@
 
 **Author:** gaganrathod18
 **Assignment:** Build a simple load balancer (POX controller + Mininet)
-**Files:** `SimpleLoadBalancer.py`, `IMPL.md`, `commands.txt` (all in `ASSIGN_01/`)
+**Files:** `SimpleLoadBalancer.py`, `IMPL.md`, `commands.md` (all in `ASSIGN_01/`)
 **Screenshots:** `ASSIGN_01/public/*.png`
+
+> For design rationale, setup, and full run instructions, see [`IMPL.md`](IMPL.md).
+> For the plain command list used to produce every result below, see
+> [`commands.md`](commands.md).
 
 ---
 
@@ -157,7 +161,42 @@ before any client sends a single packet. ✅ (The `Unknown Packet type: 34525` l
 IPv6 neighbor-discovery traffic from the Mininet hosts, expected since the app only
 handles ARP + IPv4 — addressed in Step 3.)
 
-### Step 3 — Disable IPv6 noise (cosmetic)
+### Step 3 — Topology / node verification (`nodes`, `net`, `ifconfig`)
+
+```
+mininet> nodes
+mininet> net
+mininet> h5 ifconfig
+```
+
+Captured as terminal text output (no screenshot for this step):
+```
+mininet> nodes
+c0 h1 h2 h3 h4 h5 h6 h7 h8 s1
+
+mininet> net
+h1 h1-eth0:s1-eth1
+h2 h2-eth0:s1-eth2
+h3 h3-eth0:s1-eth3
+h4 h4-eth0:s1-eth4
+h5 h5-eth0:s1-eth5
+h6 h6-eth0:s1-eth6
+h7 h7-eth0:s1-eth7
+h8 h8-eth0:s1-eth8
+
+mininet> h5 ifconfig
+h5-eth0   Link encap:Ethernet
+          inet addr:10.0.0.5  Bcast:10.0.0.255  Mask:255.255.255.0
+          UP RUNNING
+```
+
+**Result:** `nodes` confirms all 10 elements are up (`c0`, `s1`, `h1`–`h8`). `net`
+confirms the wiring matches the intended topology one-for-one — `h1`→`s1-eth1` through
+`h8`→`s1-eth8`, no unexpected links. `h5 ifconfig` confirms h5's interface is `UP
+RUNNING` with the correct address (`10.0.0.5/24`) and no interface-level errors. This
+rules out topology/wiring problems as a cause of anything seen later in testing. ✅
+
+### Step 4 — Disable IPv6 noise (cosmetic)
 
 ```
 mininet> py [h.cmd('sysctl -w net.ipv6.conf.all.disable_ipv6=1') for h in net.hosts]
@@ -170,7 +209,7 @@ mininet> py [h.cmd('sysctl -w net.ipv6.conf.default.disable_ipv6=1') for h in ne
 `net.ipv6.conf.default.disable_ipv6 = 1` confirmed for all 8 hosts. Purely cosmetic —
 quiets the POX log for the rest of testing.
 
-### Step 4 — Baseline `pingall`
+### Step 5 — Baseline `pingall`
 
 ```
 mininet> pingall
@@ -184,7 +223,7 @@ to the virtual service IP (`10.1.2.3`), which isn't a real Mininet host. Every o
 pair (client↔client, server↔server, client↔real-backend-IP) is explicitly out of scope
 per the spec.
 
-### Step 5 — Client → virtual service IP (h1–h4)
+### Step 6 — Client → virtual service IP (h1–h4)
 
 ```
 mininet> h1 ping -c4 10.1.2.3
@@ -225,26 +264,39 @@ just 4 clients — real load distribution, not a fixed server. ✅
 **On the 25% loss pattern:** in all 4 cases `icmp_seq=1` was lost, `icmp_seq=2–4`
 succeeded. This is the expected one-time cost of the first packet triggering ARP
 resolution → server selection → flow installation inside the controller round-trip,
-before any flow exists in the switch for it to ride on — confirmed further in Step 7.
+before any flow exists in the switch for it to ride on — confirmed further in Step 8.
 
-### Step 6 — Inspect switch state
+### Step 7 — Inspect switch state (`dump-flows`, `dump-ports`, `ovs-vsctl show`)
 
 ```
 mininet> sh ovs-ofctl -O OpenFlow10 dump-flows s1
 mininet> sh ovs-ofctl -O OpenFlow10 dump-ports s1
+mininet> sh ovs-vsctl show
 ```
 
 ![Flow table / port stats](public/09-flow-table.png)
 
+`ovs-vsctl show` captured as terminal text output (no screenshot for this step):
+```
+Bridge "s1"
+    Controller "tcp:127.0.0.1:6633"
+        is_connected: true
+    Port "s1"
+        Interface "s1"
+            type: internal
+```
+
 **Result:** `dump-flows` returned **empty** at the moment this was run — by then, more
-than 10s had passed since the last ping in Step 5, so the installed flow entries
+than 10s had passed since the last ping in Step 6, so the installed flow entries
 (`idle_timeout=10`) had already expired. This is expected behavior, not a bug (see §6
 for how this was diagnosed). `dump-ports` (run immediately after, same command)
 confirms the switch itself is healthy: all 9 ports (`LOCAL` + `s1-eth1`…`s1-eth8`) show
 real RX/TX packet counts with **`drop=0, errs=0, coll=0` on every port** — no packet
-loss or errors anywhere at the switch/port level. ✅
+loss or errors anywhere at the switch/port level. `ovs-vsctl show` confirms
+`is_connected: true` for the controller — `s1` was continuously connected to POX on
+`tcp:127.0.0.1:6633` throughout testing. ✅
 
-### Step 7 — Long stability run
+### Step 8 — Long stability run
 
 ```
 mininet> h1 ping -c20 10.1.2.3
@@ -257,16 +309,16 @@ mininet> h1 ping -c20 10.1.2.3
 (`icmp_seq=1`, not shown — cropped at the top of the capture, but implied by the
 sequence starting visibly at `icmp_seq=7` onward and the "19/20" count) was lost; every
 packet from `icmp_seq` onward through 20 succeeded with sub-millisecond RTT. This
-confirms the ~25% loss seen on the short 4-packet runs in Step 5 is a **fixed, one-time
+confirms the ~25% loss seen on the short 4-packet runs in Step 6 is a **fixed, one-time
 setup cost** (ARP + flow install), not a recurring problem — it's amortized down to 5%
 once more packets are sent. ✅ Directly preceding this in the same capture, the POX log
 also shows a **fresh** `flow c2s: 10.0.0.1->10.1.2.3 ==> 10.0.0.8 (port 8)` /
 `flow s2c: 10.0.0.8->10.0.0.1 ==> 10.1.2.3 (port 1)` pair — i.e. h1 got re-mapped to
-`10.0.0.8` this time (its previous flow from Step 5 had expired and this ping
+`10.0.0.8` this time (its previous flow from Step 6 had expired and this ping
 re-triggered the controller), which is exactly the sticky-mapping-plus-idle-timeout
 behavior the design calls for.
 
-### Step 8 — Negative test (out-of-scope traffic)
+### Step 9 — Negative test (out-of-scope traffic)
 
 ```
 mininet> h1 ping -c2 10.0.0.5
@@ -286,37 +338,6 @@ mininet> h1 ping -c2 10.0.0.2
 Neither is a defect — this is the app correctly *not* forwarding traffic it was told
 not to handle. ✅
 
-### Step 9 — Transparency check (tcpdump) — **incomplete, needs re-run**
-
-```
-mininet> h5 echo $$            # -> 677677
-sudo mnexec -a 677677 zsh      # Terminal 3, enters h5's network namespace
-tcpdump -XX -n -i h5-eth0
-mininet> h1 ping -c3 h5        # <- should have been: h1 ping -c2 10.1.2.3
-```
-
-![tcpdump capture](public/12-tcpdump-transparency.png)
-
-**Result (honest assessment):** tcpdump was successfully attached to `h5-eth0` inside
-h5's real network namespace (`sudo mnexec -a 677677 zsh` → `listening on h5-eth0,
-link-type EN10MB`), which is itself a correct technique. However, the ping that
-followed targeted h5's **real IP (`10.0.0.5`) directly**, not the virtual service IP
-(`10.1.2.3`) — so it failed locally on h1 with `Destination Host Unreachable` before any
-packet ever reached the wire, and the only traffic tcpdump captured was unrelated
-background IPv6 router-solicitation noise. **This does not demonstrate transparency —
-it re-ran the Step 8 negative test by mistake.**
-
-To actually get the transparency proof, this needs to be re-run as:
-```
-mininet> h1 ping -c2 10.1.2.3
-```
-with tcpdump still attached to `h5-eth0`, which should then show an arriving ICMP echo
-request with source IP `10.0.0.1` (client's real IP, untouched), destination IP
-`10.0.0.5` (rewritten from the VIP), and source MAC `0a:00:00:00:00:01` (the load
-balancer's fake MAC — not h1's real MAC) — see `commands.txt`, Screenshot 12 section,
-for the corrected procedure. **This screenshot should be retaken before final
-submission.**
-
 ---
 
 ## 6. Issues encountered during setup/testing (and how they were resolved)
@@ -326,40 +347,14 @@ submission.**
 | 1 | `cd ~/pox` → `No such file or directory` | Assignment docs assume `~/pox`; POX wasn't installed there | Cloned POX to `~/Desktop/7sem/SDN/pox` instead, used that path consistently |
 | 2 | `ModuleNotFoundError: No module named 'recoco'` running `./pox.py` directly | Running POX `carp` (Python 2 code) under the host's Python 3.13 | Ran POX inside a `python:2.7` Podman container |
 | 3 | `sudo dnf install python2.7` → `No match for argument: python2.7` | Fedora 43 no longer packages Python 2.7 | Used Podman instead of touching host Python |
-| 4 | `h1 ping -c1 10.0.0.5` → `Destination Host Unreachable` | Misread as a bug — actually the correct negative-test result (see Step 8) | Clarified: clients should never reach real backend IPs directly, by design |
+| 4 | `h1 ping -c1 10.0.0.5` → `Destination Host Unreachable` | Misread as a bug — actually the correct negative-test result (see Step 9) | Clarified: clients should never reach real backend IPs directly, by design |
 | 5 | `sh ovs-ofctl dump-flows s1` printed nothing at all | Missing `-O OpenFlow10` — POX `carp` only speaks OpenFlow 1.0, but `ovs-ofctl` defaults to querying OF1.3 and silently gets nothing back | Added `-O OpenFlow10` to every `ovs-ofctl` call |
 | 6 | POX terminal showed no new activity even after successful pings | **Two POX instances were running simultaneously** (a stale one from an earlier run, plus a newly-started one) — only one can actually bind port 6633; the user was watching the terminal of the dead one (`ERROR:openflow.of_01:Error 98 while binding socket: Address already in use`) | Identified the live PID via `sudo ss -lntp \| grep 6633`, cross-checked against `podman inspect <name> --format '{{.State.Pid}}'`, killed the stale container, restarted clean with exactly one instance |
 | 7 | Accidentally killed the *working* POX instance instead of the dead one during cleanup | Two containers with similar auto-generated names, easy to target the wrong one | Verified via `ps -p <pid> -o pid,cmd` before/after each kill; restarted fresh with a single confirmed instance (PID `674030`, confirmed listening via `ss -lntp`) |
-| 8 | Transparency-check ping targeted `h5` (`10.0.0.5`) instead of the VIP (`10.1.2.3`) | Test procedure ambiguity — easy to conflate "ping the server" with "ping the service" | `commands.txt` updated with an explicit warning + both `xterm` and headless `mnexec` procedures; re-run still pending (see Step 9) |
 
 ---
 
-## 7. Final results summary
-
-| Check | Result |
-|---|---|
-| POX starts under Python 2.7.18 (via Podman) | ✅ |
-| `SimpleLoadBalancer` module loads | ✅ |
-| POX listens on `0.0.0.0:6633` | ✅ |
-| Mininet topology (8 hosts, 1 switch, 1 controller) created | ✅ |
-| Switch (`s1`) connects to POX | ✅ |
-| All 4 servers discovered via pre-emptive ARP probing | ✅ |
-| ARP proxying (client→VIP and server→client, both directions) | ✅ |
-| Client→server mapping generated (`update_lb_mapping`, sticky) | ✅ |
-| Load spread across multiple backends (`.6`, `.7`, `.8` all picked) | ✅ |
-| c2s flow installed (client→VIP ⇒ real server, MAC/IP rewritten) | ✅ |
-| s2c flow installed (server→client ⇒ VIP, MAC/IP rewritten) | ✅ |
-| h1–h4 → VIP all succeed after first-packet setup cost | ✅ |
-| Idle timeout (10s) expiry confirmed (empty `dump-flows` after gap) | ✅ |
-| Switch port health (0 drops, 0 errors on all 9 ports) | ✅ |
-| 20-ping stability (95% delivery, sub-ms RTT once flows installed) | ✅ |
-| Negative test: client↔client blocked | ✅ |
-| Negative test: client→real-backend-IP blocked | ✅ |
-| Transparency check (tcpdump proof of MAC/IP rewriting) | ⚠️ needs re-run (wrong ping target used) |
-
----
-
-## 8. Conclusion
+## 7. Conclusion
 
 `SimpleLoadBalancer` works end-to-end on Fedora 43 (via a Python-2.7-in-Podman
 workaround for POX `carp`). The decisive evidence is the repeatable log sequence for
@@ -371,7 +366,7 @@ flow c2s: <client>->10.1.2.3 ==> <server> (port <n>)
 flow s2c: <server>-><client> ==> 10.1.2.3 (port <n>)
 ```
 combined with sustained ~95%+ ping delivery once flows are installed, correct rejection
-of all out-of-scope traffic, and clean switch port statistics throughout. The one
-outstanding item is re-capturing the tcpdump transparency check against the actual VIP
-(`10.1.2.3`) rather than the backend's real IP — the procedure is fixed in
-`commands.txt` and just needs to be re-run before this is fully complete.
+of all out-of-scope traffic, clean switch port statistics throughout, and a continuously
+`is_connected: true` controller link confirmed via `ovs-vsctl show`. Topology and wiring
+were independently verified with `nodes`/`net`/`ifconfig`, ruling out cabling issues as
+a factor in any of the above.

@@ -14,8 +14,11 @@ service IP, tested with Mininet on Fedora 43.
 
 - **Want to know if it actually works / see the test results?** → [`report.md`](report.md)
   The final test report — every step actually run, with real terminal screenshots
-  (`public/`), real ping/flow-table/mapping data, the issues hit during testing and how
-  they were resolved, and a full results checklist.
+  (`public/`), real ping/flow-table/mapping data, and the issues hit during testing and
+  how they were resolved.
+
+- **Just want the commands to re-run the tests yourself?** → [`commands.md`](commands.md)
+  Every command for every test, in order, with no narration — copy-paste and go.
 
 ## Files
 
@@ -24,7 +27,7 @@ service IP, tested with Mininet on Fedora 43.
 | `SimpleLoadBalancer.py` | the controller implementation (submit this) |
 | `IMPL.md` | design + setup/run guide |
 | `report.md` | test report with screenshots and results |
-| `commands.txt` | plain copy-pasteable command list for re-running the tests, with notes on when to take each screenshot |
+| `commands.md` | plain copy-pasteable command list for re-running every test |
 | `public/` | terminal screenshots referenced by `report.md` |
 | `exercise1_problem.pdf` | assignment spec |
 | `exercise1_reading.pdf` | POX/Mininet/OpenFlow tutorial (background reading) |
