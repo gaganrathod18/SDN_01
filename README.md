@@ -13,7 +13,7 @@ service IP, tested with Mininet on Fedora 43.
   table.
 
 - **Want to know if it actually works / see the test results?** → [`report.md`](report.md)
-  ([styled version: `report.html`](report.html)) — the final test report, every step
+  — the final test report, every step
   actually run, with real terminal screenshots (`public/`), real ping/flow-table/mapping
   data, and the issues hit during testing and how they were resolved.
 
