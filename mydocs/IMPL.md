@@ -1,7 +1,9 @@
 # IMPL.md — Simple Load Balancer (POX / OpenFlow) — Step-by-Step Guide
 
-Source docs: `exercise1_problem.pdf` (spec) + `exercise1_reading.pdf` (tutorial).
-Implementation: `SimpleLoadBalancer.py` (in this folder).
+Source docs: [`exercise1_problem.pdf`](../problem%20statement/exercise1_problem.pdf) (spec) +
+[`exercise1_reading.pdf`](../problem%20statement/exercise1_reading.pdf) (tutorial).
+Implementation: [`SimpleLoadBalancer.py`](../SimpleLoadBalancer.py) (at the project root,
+one level up from this file). Results of actually running it: [`REPORT.md`](../REPORT.md).
 
 This guide reflects what actually worked on **Fedora 43**, where the assignment's
 assumed Mininet VM (with POX + Python 2.7 pre-installed) isn't available — POX had to
@@ -47,10 +49,17 @@ be cloned manually and run via Podman to get the Python 2.7 runtime it needs.
 │   │   └── SimpleLoadBalancer.py     <- copy used at runtime
 │   └── ...
 └── ASSIGN_01/
-    ├── exercise1_problem.pdf
-    ├── exercise1_reading.pdf
-    ├── IMPL.md
-    └── SimpleLoadBalancer.py         <- source of truth, edit here
+    ├── README.md
+    ├── REPORT.md
+    ├── SimpleLoadBalancer.py         <- source of truth, edit here
+    ├── mydocs/
+    │   ├── IMPL.md                   <- this file
+    │   ├── commands.md
+    │   └── commands.txt              <- local scratch, gitignored
+    ├── problem statement/
+    │   ├── exercise1_problem.pdf
+    │   └── exercise1_reading.pdf
+    └── screenshots/                  <- terminal screenshots referenced by REPORT.md
 ```
 Adjust every `~/pox` reference below to your actual POX path if it differs
 (`~/Desktop/7sem/SDN/pox` in this setup).

@@ -5,7 +5,7 @@ All commands needed to run every test, in order. Three terminals: **Terminal 1**
 for the transparency check).
 
 For narrative/explanation see [`IMPL.md`](IMPL.md); for actual results see
-[`report.md`](report.md).
+[`REPORT.md`](../REPORT.md).
 
 ## Topology
 

@@ -1,14 +1,16 @@
 # SDN Assignment 01 — Simple Load Balancer (POX / OpenFlow)
 ### Final Test Report
 
-**Author:** gaganrathod18
-**Assignment:** Build a simple load balancer (POX controller + Mininet)
-**Files:** `SimpleLoadBalancer.py`, `IMPL.md`, `commands.md` (all in `ASSIGN_01/`)
-**Screenshots:** `ASSIGN_01/public/*.png`
+**Author:** Gagan Rathod  
+**Roll no :** 23bcs106  
+**Assignment:** Build a simple load balancer (POX controller + Mininet)  
+**Files:** [`SimpleLoadBalancer.py`](SimpleLoadBalancer.py) (`ASSIGN_01/`),
+[`IMPL.md`](mydocs/IMPL.md), [`commands.md`](mydocs/commands.md) (`ASSIGN_01/mydocs/`)  
+**Screenshots:** `ASSIGN_01/screenshots/*.png`
 
-> For design rationale, setup, and full run instructions, see [`IMPL.md`](IMPL.md).
+> For design rationale, setup, and full run instructions, see [`IMPL.md`](mydocs/IMPL.md).
 > For the plain command list used to produce every result below, see
-> [`commands.md`](commands.md).
+> [`commands.md`](mydocs/commands.md).
 
 ---
 
@@ -20,8 +22,9 @@ switch (`s1`) into a transparent load balancer between 4 clients (h1–h4,
 them with a virtual service IP (`10.1.2.3`). Clients only ever see the virtual IP; the
 switch proxies ARP and rewrites MAC/IP addresses in both directions so the redirection
 to a randomly-chosen backend is invisible to both sides. Full spec in
-`exercise1_problem.pdf`; background/tutorial in `exercise1_reading.pdf`; design
-rationale in `IMPL.md`.
+[`exercise1_problem.pdf`](problem%20statement/exercise1_problem.pdf); background/tutorial
+in [`exercise1_reading.pdf`](problem%20statement/exercise1_reading.pdf); design rationale
+in [`IMPL.md`](mydocs/IMPL.md).
 
 ---
 
@@ -41,7 +44,7 @@ Fedora 43 doesn't package Python 2.7 (`dnf install python2.7` → no match), and
 `carp` branch requires it, so POX was run inside a Python 2.7 container via Podman
 (`--network host`, so the host's Mininet can still reach it on `127.0.0.1:6633`),
 leaving the host's system Python untouched. Full setup steps are documented in
-`IMPL.md`.
+[`IMPL.md`](mydocs/IMPL.md).
 
 ---
 
@@ -111,15 +114,15 @@ this mattered during testing.)
   else (client↔client, client↔real-backend-IP, non-ARP/IP types) is intentionally left
   unhandled, per spec.
 
-Full function-by-function rationale is in `IMPL.md` §0.
+Full function-by-function rationale is in [`IMPL.md`](mydocs/IMPL.md) §0.
 
 ---
 
 ## 5. Test execution log (step by step, with real screenshots)
 
 All screenshots below are the actual terminal output captured during testing, saved in
-`public/`. Nothing here is simulated — every value shown is what the running system
-produced.
+[`screenshots/`](screenshots/). Nothing here is simulated — every value shown is what
+the running system produced.
 
 ### Step 1 — Start POX
 
@@ -130,7 +133,7 @@ podman run --rm -it --network host \
   bash -c 'cd /pox && python ./pox.py log.level --DEBUG SimpleLoadBalancer --ip=10.1.2.3 --servers=10.0.0.5,10.0.0.6,10.0.0.7,10.0.0.8'
 ```
 
-![POX startup](public/01-pox-startup.png)
+![POX startup](screenshots/01-pox-startup.png)
 
 **Result:** POX 0.2.0 (carp) starts cleanly under Python 2.7.18, loads
 `SimpleLoadBalancer`, and reports `LB ready. service=10.1.2.3
@@ -143,8 +146,8 @@ then binds and listens on `0.0.0.0:6633`. ✅
 sudo mn --topo single,8 --controller remote,ip=127.0.0.1,port=6633 --mac --switch ovsk
 ```
 
-![Topology up](public/03-mininet-topology-up.png)
-![Servers discovered](public/02-pox-servers-discovered.png)
+![Topology up](screenshots/03-mininet-topology-up.png)
+![Servers discovered](screenshots/02-pox-servers-discovered.png)
 
 **Result:** Mininet creates 8 hosts, 1 switch (`s1`), starts controller `c0`, drops
 into the `mininet>` prompt. On the POX side, the moment the switch connects it logs
@@ -203,7 +206,7 @@ mininet> py [h.cmd('sysctl -w net.ipv6.conf.all.disable_ipv6=1') for h in net.ho
 mininet> py [h.cmd('sysctl -w net.ipv6.conf.default.disable_ipv6=1') for h in net.hosts]
 ```
 
-![IPv6 disabled](public/04-ipv6-disabled.png)
+![IPv6 disabled](screenshots/04-ipv6-disabled.png)
 
 **Result:** `net.ipv6.conf.all.disable_ipv6 = 1` and
 `net.ipv6.conf.default.disable_ipv6 = 1` confirmed for all 8 hosts. Purely cosmetic —
@@ -215,7 +218,7 @@ quiets the POX log for the rest of testing.
 mininet> pingall
 ```
 
-![pingall baseline](public/05-pingall-baseline.png)
+![pingall baseline](screenshots/05-pingall-baseline.png)
 
 **Result:** `100% dropped (0/56 received)`. **Expected**, not a failure —
 `pingall` exercises every host pair, and this app only ever handles traffic addressed
@@ -232,10 +235,10 @@ mininet> h3 ping -c4 10.1.2.3
 mininet> h4 ping -c4 10.1.2.3
 ```
 
-![h1 mapping + ping](public/06-ping&pox-mapping-flow-h1.png)
-![h2 mapping + ping](public/07-ping&pox-mapping-flow-h2.png)
-![h3 mapping + ping](public/08-ping&pox-mapping-flow-h3.png)
-![h4 mapping + ping](public/08-ping&pox-mapping-flow-h4.png)
+![h1 mapping + ping](screenshots/06-ping&pox-mapping-flow-h1.png)
+![h2 mapping + ping](screenshots/07-ping&pox-mapping-flow-h2.png)
+![h3 mapping + ping](screenshots/08-ping&pox-mapping-flow-h3.png)
+![h4 mapping + ping](screenshots/08-ping&pox-mapping-flow-h4.png)
 
 **Result — the core proof the load balancer works:**
 
@@ -274,7 +277,7 @@ mininet> sh ovs-ofctl -O OpenFlow10 dump-ports s1
 mininet> sh ovs-vsctl show
 ```
 
-![Flow table / port stats](public/09-flow-table.png)
+![Flow table / port stats](screenshots/09-flow-table.png)
 
 `ovs-vsctl show` captured as terminal text output (no screenshot for this step):
 ```
@@ -302,7 +305,7 @@ loss or errors anywhere at the switch/port level. `ovs-vsctl show` confirms
 mininet> h1 ping -c20 10.1.2.3
 ```
 
-![20-ping stability](public/10-h1-ping20-stability.png)
+![20-ping stability](screenshots/10-h1-ping20-stability.png)
 
 **Result:** `20 packets transmitted, 19 received, 5% packet loss`,
 `rtt min/avg/max/mdev = 0.038/0.080/0.406/0.079 ms`. Only the very first packet
@@ -325,7 +328,7 @@ mininet> h1 ping -c2 10.0.0.5
 mininet> h1 ping -c2 10.0.0.2
 ```
 
-![Negative test](public/11-negative-test-unreachable.png)
+![Negative test](screenshots/11-negative-test-unreachable.png)
 
 **Result:** both fail immediately with `Destination Host Unreachable`,
 `2 packets transmitted, 0 received, +2 errors, 100% packet loss`. Correct and expected:
